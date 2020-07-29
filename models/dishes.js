@@ -56,7 +56,7 @@ const dishSchema = new Schema({
         type: Boolean,
         default: false,
     },
-    comments:[ commentSchema ]
+    comments:[ commentSchema ] //sub-document
 },
 {
     timestamps: true //'timestamps' is added to get the timestamp for each document following this schema, when it was created and everytime it was updated
