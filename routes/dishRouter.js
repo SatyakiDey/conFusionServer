@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 
-const mongoose = require('mongoose');
+//const mongoose = require('mongoose');
 const Dishes = require('../models/dishes');
 
 const dishRouter = express.Router(); //The express.Router class is used to create modular, mountable route handlers. A Router instance is a complete middleware and routing system; for this reason, it is often referred to as a “mini-app”.
@@ -90,7 +90,6 @@ dishRouter.route('/:dishId') //When a paramter is mentioned in the URI ,i.e, URI
     },
     { new : true }) //if true, return the modified document rather than the original. 
     .then((dish) => {
-        console.log('Dish Created ',dish);
         res.statusCode=200;
         res.setHeader('Content-Type','application/json');
         res.json(dish);
