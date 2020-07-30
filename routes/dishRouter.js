@@ -12,7 +12,7 @@ dishRouter.route('/') //When no paramter is mentioned in the URI ,i.e, URI point
 /*.all((req,res,next) => { //this snippet means that this code will be executed first for any incoming request with any method
     res.statusCode=200;
     res.setHeader('Content-Type','text/plain');
-    next(); //Using next(), the modified "res" object with statusCode and Header will be propagated to all the methods which will operate on the same resource(which in this case is '/dishes')
+    next(); //Using next(), the modified "res" object with statusCode and Header will be propagated to all the methods which will operate on the same resource or endpoint(which in this case is '/dishes')
 })*/
 .get((req,res,next) => { //"res" already has statusCode 200 and previously set header
 
