@@ -44,26 +44,28 @@ app.use(session({
   store : new FileStore()//storing permanently into the file(in the auto generated "session" folder), which will be retrieved as and when needed and added to the request from the client.
 }));
 
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
+
 function auth(req, res, next){
   console.log(req.session);
 
   if(!req.session.user){ //checking for the presence of "user" parameter in the express-session generated cookie in the request from the client. 
-    var authHeader = req.headers.authorization; //storing the authorization of the client request headers.
+    //var authHeader = req.headers.authorization; //storing the authorization of the client request headers.
+    var err = new Error('You are not authenticated!'); //absence of "user" parameter in the express-session generated cookie in the client request is indicative of the fact that the client is trying to access the resources without logging in.
 
     //if the session-generated cookie is not found, it checks if the headers of the client request doesn't contain authorization
-      if(!authHeader){
-      var err = new Error('You are not authenticated!');
-
-      res.setHeader('WWW-Authenticate','Basic');
+      //if(!authHeader){
+      //res.setHeader('WWW-Authenticate','Basic');
       err.status= 401;
       return next(err); //returing the an error and passing it to the default error handling middleware at the end of this file.
-      }
+      //}
 
-    //efollowing part is executed if the headers of the client request contains authorization with user name and password encoded in base64.
+    //following part is executed if the headers of the client request contains authorization with user name and password encoded in base64.
 
     //at this point, it is established that the session-generated cookie is not found but the client has entered some username and password that is contained in "authHeader". At this junture, we can say that the client has just logged in, or just started a new session.
 
-    var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+    /*var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
     //spliting the authorization-header and accessing the second array-element of the ".split()" operation(which is the username and password encoded in base64) into buffer. Thereafter the buffer is converetd into a String. The string should be as follows "admin:password". It is then converted into an array of two elements using ".splt(':')" giving us the username and password.
 
     var username = auth[0];
@@ -83,12 +85,12 @@ function auth(req, res, next){
       res.setHeader('WWW-Authenticate','Basic');
       err.status= 401;
       return next(err);
-    }
+    }*/
   }
 
   else{// if the cookie contained in the client request has a session cookie with parameter "user"
 
-    if(req.session.user === 'admin'){ 
+    if(req.session.user === 'authenticated'){ //if the "user" parameter in session-cookie contained in the client request has the value as "authenticated"
       
       //if the session-generated cookie named "session-id", contained in the client request has a parameter "user" named as "admin", it means the session has been already started and the client has already logged in.
 
@@ -97,9 +99,8 @@ function auth(req, res, next){
     }
     else{
       var err = new Error('You are not authenticated!');
-
-      res.setHeader('WWW-Authenticate','Basic');
-      err.status= 401;
+      //res.setHeader('WWW-Authenticate','Basic');
+      err.status= 403;
       return next(err);
     }
   }
@@ -109,8 +110,6 @@ app.use(auth); //using this middleware before any other resource accessing middl
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
 app.use('/dishes', dishRouter);
 app.use('/promotions', promoRouter);
 app.use('/leaders', leaderRouter);
