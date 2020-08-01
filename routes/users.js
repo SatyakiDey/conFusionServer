@@ -1,6 +1,7 @@
 var express = require('express');
 const bodyParser = require('body-parser');
 var User = require('../models/user');
+var passport = require('passport');
 
 var router = express.Router();
 router.use(bodyParser.json());
@@ -11,30 +12,44 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/signup', (req, res, next) => {
-  User.findOne({username: req.body.username}) //looking in the database, if the user username and pass already exists.
-  .then((user) => {
-    if(user != null) { //if it does then an error is thrown
-      var err = new Error('User ' + req.body.username + ' already exists!');
+  //User.findOne({username: req.body.username}) //looking in the database, if the user username and password already exists.
+  User.register(new User({username: req.body.username}), //".register()" is a method provided by "passport-local-mongoose" to signup a new user using the json object having username and password in request body. The password is hashed(encrypted) using a salt key.
+  req.body.password, (err,user) => { //this does not return a promise, instead it's 3rd parameter is a callback function.
+  //.then((user) => {
+    //if(user != null) { //if it does then an error is thrown
+      if(err) {
+      /*var err = new Error('User ' + req.body.username + ' already exists!');
       err.status = 403;
-      next(err);
+      next(err);*/
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        res.json({err:err});
     }
     else {
-      return User.create({
+      /*return User.create({
         username: req.body.username,
-        password: req.body.password});
+        password: req.body.password});*/
+
+        passport.authenticate('local')(req, res,() => { //"passport" middleware uses a method called "authenticate()" which checks the validity of the client credentials. If it is already present in the database, an error is thrown by "passport" itself, otherwise registration is completed successfully.
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json({success: true, status: 'Registration Successful!'});
+        });
     }
-  })
-  .then((user) => {
+  });
+  /*.then((user) => {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
     res.json({status: 'Registration Successful!', user: user});
   }, (err) => next(err))
-  .catch((err) => next(err));
+  .catch((err) => next(err));*/
 });
 
-router.post('/login', (req,res,next) => {
+router.post('/login', passport.authenticate('local'), (req,res,next) => { //Unlike the earlier case where we were including credentials in the authorization header, here we expect that to be included in the body of the incoming post message.The second parameter of the "post()" method of "passport-local" checks the validity of the client credentials using the Local startegy that we declared. An appropriate error is thrown by "passport" itself.
 
-  if(!req.session.user){  
+ // So when the router post comes in on the login endpoint, we will first call the passport authenticate local. If this is successful then this will come in and the next function that follows will be executed. If there is any error in the authentication, this passport authenticate local will automatically send back a reply to the client about the failure of the authentication. So that is already taken care of
+
+  /*if(!req.session.user){  
     var authHeader = req.headers.authorization; 
 
       if(!authHeader){
@@ -77,7 +92,13 @@ router.post('/login', (req,res,next) => {
     res.statusCode = 200;
     res.setHeader('Content-type','text/plain');
     res.end('You are already authenticated!');
-  }
+  }*/
+ 
+  //on successful matching of the credentials
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'application/json');
+  res.json({success: true, status: 'You have successfully logged in'});
+
 });
 
 router.get('/logout',(req,res,next) => {

@@ -1,10 +1,12 @@
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
-var cookieParser = require('cookie-parser');
+//var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var session = require('express-session');
 var FileStore = require('session-file-store')(session);//file store middleware for storing using tracking info in a file
+var passport = require('passport');
+var authenticate = require('./authenticate');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -44,20 +46,25 @@ app.use(session({
   store : new FileStore()//storing permanently into the file(in the auto generated "session" folder), which will be retrieved as and when needed and added to the request from the client.
 }));
 
+// When you log in, a call to the passport.authenticate(local) will be done, when this is done at the login stage, the passport authenticate local will automatically add the user property to the request message. So, it'll add req.user and then, the "passport.session()" that we have done will automatically serialize that user information and then store it in the session. So, and subsequently, whenever a incoming request comes in from the client side with the session cookie already in place, then this will automatically load the "req.user" onto the incoming request. So, that is how the passport session itself is organized
+
+app.use(passport.initialize());//initialises the authentication module
+app.use(passport.session());//alters the request object and changes the "user" value that is currenty the session ID into the true deserialized user object.
+
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 function auth(req, res, next){
-  console.log(req.session);
 
-  if(!req.session.user){ //checking for the presence of "user" parameter in the express-session generated cookie in the request from the client. 
+  //if(!req.session.user){ //checking for the presence of "user" parameter in the express-session generated cookie in the request from the client. 
+  if(!req.user){
     //var authHeader = req.headers.authorization; //storing the authorization of the client request headers.
     var err = new Error('You are not authenticated!'); //absence of "user" parameter in the express-session generated cookie in the client request is indicative of the fact that the client is trying to access the resources without logging in.
 
     //if the session-generated cookie is not found, it checks if the headers of the client request doesn't contain authorization
       //if(!authHeader){
       //res.setHeader('WWW-Authenticate','Basic');
-      err.status= 401;
+      err.status= 403;
       return next(err); //returing the an error and passing it to the default error handling middleware at the end of this file.
       //}
 
@@ -90,20 +97,20 @@ function auth(req, res, next){
 
   else{// if the cookie contained in the client request has a session cookie with parameter "user"
 
-    if(req.session.user === 'authenticated'){ //if the "user" parameter in session-cookie contained in the client request has the value as "authenticated"
+    //if(req.session.user === 'authenticated'){ //if the "user" parameter in session-cookie contained in the client request has the value as "authenticated"
       
       //if the session-generated cookie named "session-id", contained in the client request has a parameter "user" named as "admin", it means the session has been already started and the client has already logged in.
 
       //in such case the execution is forwarded to the conscequent middlewares.
       next();
     }
-    else{
+    /*else{
       var err = new Error('You are not authenticated!');
       //res.setHeader('WWW-Authenticate','Basic');
       err.status= 403;
       return next(err);
     }
-  }
+  }*/
 }
 
 app.use(auth); //using this middleware before any other resource accessing middleware results in this being executed first.
