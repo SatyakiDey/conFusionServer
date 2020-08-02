@@ -2,6 +2,7 @@ var express = require('express');
 const bodyParser = require('body-parser');
 var User = require('../models/user');
 var passport = require('passport');
+var authenticate = require('../authenticate');
 
 var router = express.Router();
 router.use(bodyParser.json());
@@ -95,9 +96,13 @@ router.post('/login', passport.authenticate('local'), (req,res,next) => { //Unli
   }*/
  
   //on successful matching of the credentials
+
+  //on successful authentication of the user using "passpost.authenticate('local')" , request message of the client contains the "user" parameter, which contains the ObjectID(named as _id) that is assigned to it when it is stored in the database. This id is used as a payload for JWT.
+
+  var token = authenticate.getToken({_id: req.user._id});
   res.statusCode = 200;
   res.setHeader('Content-Type', 'application/json');
-  res.json({success: true, status: 'You have successfully logged in'});
+  res.json({success: true,token: token, status: 'You have successfully logged in'});
 
 });
 
