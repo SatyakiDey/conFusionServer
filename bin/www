@@ -7,6 +7,8 @@
 var app = require('../app');
 var debug = require('debug')('confusionserver:server');
 var http = require('http');
+var https = require('https');
+var fs = require('fs'); //filesystem module is needed to access the private and self-signed certificates generated using openSSL
 
 /**
  * Get port from environment and store in Express.
@@ -14,6 +16,7 @@ var http = require('http');
 
 var port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
+app.set('secPort',port+443); //setting a new port for https server at 3443
 
 /**
  * Create HTTP server.
@@ -29,6 +32,19 @@ server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
 
+var options = {
+  key: fs.readFileSync(__dirname + '/private.key'), //synchronously reading the private key from the same folder
+  cert: fs.readFileSync(__dirname + '/certificate.pem'),//synchronously reading the certificate from the same folder
+};
+
+var secureServer = https.createServer(options, app); //creating a secure https server
+
+secureServer.listen(app.get('secPort'), () => { //listnening to the https server
+  console.log('Secure Server listening on port ', app.get('secPort'));
+});
+
+secureServer.on('error' , onError); //incase any error is encountered to execute the above statement
+secureServer.on('listening' , onListening); ////incase of successful execution of the '.listen()' the method
 /**
  * Normalize a port into a number, string, or false.
  */

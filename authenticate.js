@@ -34,7 +34,7 @@ exports.jwtPassport = passport.use(new JwtStrategy(opts, //the "verify" function
             if(err){
                 return done(err, false); //setting the first parameter of "done()" to the err value and user parameter to null, indicating that an error occured. The appropriate error is then displayed by the '.authenticate()' method.
             }
-            else if(user){ ////setting the second parameter of "done()" to the fetched user object and first parameter to null, indicating that the appropriate user was found.
+            else if(user){ //setting the second parameter of "done()" to the fetched user object and first parameter to null, indicating that the appropriate user was found.
                 return done(null, user);
             }
             else{

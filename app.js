@@ -28,6 +28,16 @@ connect.then((db) => {
 
 var app = express();
 
+app.all('*', (req, res, next) => { //'*' denotes for all incoming request to the server
+  if(req.secure){ //if the request is through https the 'secure' flag is set
+    return next(); //the follwoing middlewares are executed
+  }
+  else{ //if the request is form http
+    res.redirect(307, 'https://' + req.hostname + ':' + app.get('secPort') + req.url); //redirecting the request to the port serving https requests. Hostname and URI is already present in the request.
+    //Status code 307 here represents that the target resource resides temporarily under different URL. And the user agent must not change the request method if it reforms in automatic redirection to that URL. So, I'll be expecting user agent to retry with the same method that they have used for the original end point.
+  }
+});
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
