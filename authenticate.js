@@ -44,3 +44,15 @@ exports.jwtPassport = passport.use(new JwtStrategy(opts, //the "verify" function
     }));
 
     exports.verifyUser = passport.authenticate('jwt', {session:false}); //exporting this as function will help us to authenticate the user whenever we want in the "routes" module.
+
+    exports.verifyAdmin = function(req,res,next) {
+        if(req.user.admin){
+             next();
+        }
+        else
+        {
+        err = new Error('You are not authorized to perform this operation!');
+            err.status = 403;
+            return next(err);       
+        }
+    }

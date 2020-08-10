@@ -28,7 +28,7 @@ dishRouter.route('/') //When no paramter is mentioned in the URI ,i.e, URI point
     (err) => next(err)) //when the promise is resolved, first call back function with parameter "dishes" is executed. When promise is rejected the second call back function with parameter "err" is executed.
     .catch((err) => next(err)); //this is executed when the resolved part of the ".then()"(or the callaback function with "dishes" parameter) throws any error.
 })
-.post( authenticate.verifyUser,(req,res,next) => {
+.post( authenticate.verifyUser,authenticate.verifyAdmin, (req,res,next) => {
     //"name" and "description" of the req.body is avaliable because the "body-parser" middleware has been used to already parse the request into a JSON object which conatins the key "name" and "description" and their corresponding values. This can be set using POSTMAN.
    // res.end('Will add the dish: '+ req.body.name +' with details: '+ req.body.description);
 
@@ -42,13 +42,13 @@ dishRouter.route('/') //When no paramter is mentioned in the URI ,i.e, URI point
    (err) => next(err))
    .catch((err) => next(err)); 
 })
-.put(authenticate.verifyUser, (req,res,next) => {
+.put(authenticate.verifyUser,authenticate.verifyAdmin, (req,res,next) => {
     res.statusCode=403;
     res.end('Put operation not supported on /dishes');
 })
-.delete(authenticate.verifyUser, (req,res,next) =>{
+.delete(authenticate.verifyUser,authenticate.verifyAdmin, (req,res,next) =>{
     //res.end("Deleting all the dishes!");
-
+    //authenticate.verifyAdmin(req.user, next);
     Dishes.remove({})
     .then((resp) => {
        res.statusCode=200;
@@ -84,7 +84,7 @@ dishRouter.route('/:dishId') //When a paramter is mentioned in the URI ,i.e, URI
     res.statusCode=403;
     res.end('Post operation not supported on /dishes/'+ req.params.dishId);
 })
-.put(authenticate.verifyUser, (req,res,next) => {
+.put(authenticate.verifyUser,authenticate.verifyAdmin, (req,res,next) => {
     /*res.write('Updating the dish: '+req.params.dishId+'\n');
     res.end('Will update the dish: '+ req.body.name + ' with details '+ req.body.description);*/
 
@@ -102,7 +102,11 @@ dishRouter.route('/:dishId') //When a paramter is mentioned in the URI ,i.e, URI
 })
 .delete(authenticate.verifyUser, (req,res,next) =>{
     //res.end("Deleting dish: "+req.params.dishId);
-
+    /*var admin = authenticate.verifyAdmin(req.user);
+    if(admin)
+        next();
+    else
+        next(err);*/
     Dishes.findByIdAndRemove(req.params.dishId)
     .then((resp) => {
         res.statusCode=200;
@@ -145,7 +149,7 @@ dishRouter.route('/:dishId/comments') //subdocument of a document endpoint indic
         dish.save()
         .then((dish) => {
             Dishes.findById(dish._id)
-                .populate('comments.author')
+                .populate('comments.author')//This means that populate the author field of the comments sub-document array of the dish object that has been recieved after execution of th sub array, referencing to the objectid that has been set in the request body.
                 .then((dish) => {
                     res.statusCode=200;
                     res.setHeader('Content-Type','application/json');
@@ -167,7 +171,7 @@ dishRouter.route('/:dishId/comments') //subdocument of a document endpoint indic
     res.statusCode=403;
     res.end('Put operation not supported on /dishes/' + req.params.dishId + '/comments');
 })
-.delete(authenticate.verifyUser, (req,res,next) =>{
+.delete(authenticate.verifyUser,authenticate.verifyAdmin, (req,res,next) =>{
 
     Dishes.findById(req.params.dishId)
     .then((dish) => {
@@ -224,10 +228,12 @@ dishRouter.route('/:dishId/comments/:commentId')
     res.end('Post operation not supported on /dishes/'+ req.params.dishId + '/comments/' + req.params.commentId);
 })
 .put(authenticate.verifyUser, (req,res,next) => {
-
+    
     Dishes.findById(req.params.dishId)
     .then((dish) => {
-        if(dish != null && dish.comments.id(req.params.commentId) != null)
+        id1=dish.comments.id(req.params.commentId).author;
+        id2=req.user._id;
+        if(dish != null && dish.comments.id(req.params.commentId) != null && id1.equals(id2))
         {
             if(req.body.rating){ //if the update parameter has a new rating
                 dish.comments.id(req.params.commentId).rating = req.body.rating; //to update a specific parameter of a subdocument "$set: updateValue" cannot be used. In such case, this way of updating has to be adopted.
@@ -252,6 +258,11 @@ dishRouter.route('/:dishId/comments/:commentId')
             err.status = 404;
             return next(err);
         }
+        else if(!id1.equals(id2)){
+            err = new Error('You are not authorized to perform this operation!');
+            err.status = 403;
+            return next(err);
+        }
         else{
             new Error('Comment '+ req.params.commentId +' not found');
         }
@@ -263,7 +274,9 @@ dishRouter.route('/:dishId/comments/:commentId')
 
     Dishes.findById(req.params.dishId)
     .then((dish) => {
-        if(dish != null && dish.comments.id(req.params.commentId) != null)
+        id1=dish.comments.id(req.params.commentId).author;
+        id2=req.user._id;
+        if(dish != null && dish.comments.id(req.params.commentId) != null && id1.equals(id2))
         {
             dish.comments.id(req.params.commentId).remove();
             dish.save()
@@ -281,6 +294,11 @@ dishRouter.route('/:dishId/comments/:commentId')
         else if(dish == null){
             err = new Error('Dish '+ req.params.dishId +' not found');
             err.status = 404;
+            return next(err);
+        }
+        else if(!id1.equals(id2)){
+            err = new Error('You are not authorized to perform this operation!');
+            err.status = 403;
             return next(err);
         }
         else{
