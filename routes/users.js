@@ -138,6 +138,16 @@ router.get('/logout',(req,res,next) => {
     err.status = 403;
     next(err);
   }
-})
+});
+
+router.get('/facebook/token', passport.authenticate('facebook-token'), (req, res) => {
+  //after successful login/signup fo the user, the request obejct will now be added with a new field named 'user' as was the case for passport-local authentication.
+  if(req.user){
+    var token = authenticate.getToken({_id: req.user._id}); //getting the JWT token which will be used by the clien for accessing the consequent requests.
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.json({success: true,token: token, status: 'You have successfully logged in'});
+  }
+});
 
 module.exports = router;

@@ -6,6 +6,7 @@ var User = require('./models/user');
 var JwtStrategy = require('passport-jwt').Strategy;
 var ExtractJwt = require('passport-jwt').ExtractJwt;
 var jwt = require('jsonwebtoken'); //used to create, sign and verify tokens.
+var FacebookTokenStrategy =  require('passport-facebook-token');
 
 var config = require('./config');
 
@@ -55,4 +56,34 @@ exports.jwtPassport = passport.use(new JwtStrategy(opts, //the "verify" function
             err.status = 403;
             return next(err);       
         }
-    }
+    };
+
+exports.facebookPassport = passport.use(new FacebookTokenStrategy ({
+    //configuring the clientId and clientSecret which will be used along with the access token to send request to the Resource srever of Facebook to ask for the resource
+    clientID: config.facebook.clientId,
+    clientSecret: config.facebook.clientSecret
+},
+(accessToken, refreshToken, profile, done) => { //'Authentication Server' of Facebook returning the access token allowing the client(App/browser) to access the resource server of Facebook where the user profile data is stored.
+
+    User.findOne({facebookId: profile.id}, (err, user) => {//the profile details contains a field 'id', which is used to search the user from the database if it is already present.
+
+        if(err) { //if the opeartion fails
+            return done(err, false);
+        }
+        if(!err && user!= null) { //if the user is already preesnt in the database then return the user.
+            return done(null, user);
+        }
+        else{ //if the user account is not present in the database, use the profile object returned by Facebook to create a new User object in the database.
+            user = new User({username : profile.displayName});
+            user.facebookId = profile.id;
+            user.firstname = profile.name.givenName;
+            user.lastname = profile.name.familyName;
+            user.save((err, user) => { //saving the document in the 'User' collection
+                if(err) 
+                    return done(err, false);
+                else
+                return done(null, user);
+            })
+        }
+    });
+}));

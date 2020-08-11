@@ -14,7 +14,8 @@ var User = new Schema({
     admin:{
         type: Boolean,
         default: false
-    }
+    },
+    facebookId: String, //this field will be used in case the user signs up using Facebook
 });
 
 User.plugin(passportLocalMongoose); //"passport-local-mongoose" plugin adds username and password in the schema.
