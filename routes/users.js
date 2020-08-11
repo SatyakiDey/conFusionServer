@@ -3,12 +3,13 @@ const bodyParser = require('body-parser');
 var User = require('../models/user');
 var passport = require('passport');
 var authenticate = require('../authenticate');
+var cors = require('./cors');
 
 var router = express.Router();
 router.use(bodyParser.json());
 
 /* GET users listing. */
-router.get('/',authenticate.verifyUser,authenticate.verifyAdmin, (req, res, next) => {
+router.get('/', cors.corsWithOptions, authenticate.verifyUser,authenticate.verifyAdmin, (req, res, next) => {
   //res.send('respond with a resource');
   User.find({})
   .then((users) => {
@@ -21,7 +22,7 @@ router.get('/',authenticate.verifyUser,authenticate.verifyAdmin, (req, res, next
 });
 
 
-router.post('/signup', (req, res, next) => {
+router.post('/signup', cors.corsWithOptions,  (req, res, next) => {
   //User.findOne({username: req.body.username}) //looking in the database, if the user username and password already exists.
   User.register(new User({username: req.body.username}), //".register()" is a method provided by "passport-local-mongoose" to signup a new user using the json object having username and password in request body. The password is hashed(encrypted) using a salt key.
   req.body.password, (err,user) => { //this does not return a promise, instead it's 3rd parameter is a callback function.
@@ -66,7 +67,7 @@ router.post('/signup', (req, res, next) => {
   .catch((err) => next(err));*/
 });
 
-router.post('/login', passport.authenticate('local'), (req,res,next) => { //Unlike the earlier case where we were including credentials in the authorization header, here we expect that to be included in the body of the incoming post message.The second parameter of the "post()" method of "passport-local" checks the validity of the client credentials using the Local startegy that we declared. An appropriate error is thrown by "passport" itself.
+router.post('/login', cors.corsWithOptions,  passport.authenticate('local'), (req,res,next) => { //Unlike the earlier case where we were including credentials in the authorization header, here we expect that to be included in the body of the incoming post message.The second parameter of the "post()" method of "passport-local" checks the validity of the client credentials using the Local startegy that we declared. An appropriate error is thrown by "passport" itself.
 
  // So when the router post comes in on the login endpoint, we will first call the passport authenticate local. If this is successful then this will come in and the next function that follows will be executed. If there is any error in the authentication, this passport authenticate local will automatically send back a reply to the client about the failure of the authentication. So that is already taken care of
 
