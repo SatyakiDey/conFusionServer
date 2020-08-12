@@ -62,5 +62,5 @@ const dishSchema = new Schema({
     timestamps: true //'timestamps' is added to get the timestamp for each document following this schema, when it was created and everytime it was updated
 });
 
-var Dishes = mongoose.model('Dish',dishSchema); //The first argument is the singular name of the collection your model is for. Mongoose automatically looks for the plural, lowercased version of your model name. Thus, for the example above, the model Tank is for the tanks collection in the database.
+var Dishes = mongoose.model('Dish',dishSchema); //The first argument is the singular name of the collection your model is for. Mongoose automatically looks for the plural, lowercased version of your model name. Thus, for the example above, the model Dish is for the dishes collection in the database.
 module.exports = Dishes;
