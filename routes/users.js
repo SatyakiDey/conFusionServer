@@ -8,6 +8,9 @@ var cors = require('./cors');
 var router = express.Router();
 router.use(bodyParser.json());
 
+router.options('*', cors.corsWithOptions, (req, res) => { res.sendStatus(200); } ) //giving the URI access privilage only to the whitelist websites defiened in the 'cors' file
+
+
 /* GET users listing. */
 router.get('/', cors.corsWithOptions, authenticate.verifyUser,authenticate.verifyAdmin, (req, res, next) => {
   //res.send('respond with a resource');
@@ -67,7 +70,7 @@ router.post('/signup', cors.corsWithOptions,  (req, res, next) => {
   .catch((err) => next(err));*/
 });
 
-router.post('/login', cors.corsWithOptions,  passport.authenticate('local'), (req,res,next) => { //Unlike the earlier case where we were including credentials in the authorization header, here we expect that to be included in the body of the incoming post message.The second parameter of the "post()" method of "passport-local" checks the validity of the client credentials using the Local startegy that we declared. An appropriate error is thrown by "passport" itself.
+router.post('/login', cors.corsWithOptions, (req,res,next) => { //Unlike the earlier case where we were including credentials in the authorization header, here we expect that to be included in the body of the incoming post message.The second parameter of the "post()" method of "passport-local" checks the validity of the client credentials using the Local startegy that we declared. An appropriate error is thrown by "passport" itself.
 
  // So when the router post comes in on the login endpoint, we will first call the passport authenticate local. If this is successful then this will come in and the next function that follows will be executed. If there is any error in the authentication, this passport authenticate local will automatically send back a reply to the client about the failure of the authentication. So that is already taken care of
 
@@ -120,10 +123,30 @@ router.post('/login', cors.corsWithOptions,  passport.authenticate('local'), (re
 
   //on successful authentication of the user using "passpost.authenticate('local')" , request message of the client contains the "user" parameter, which contains the ObjectID(named as _id) that is assigned to it when it is stored in the database. This id is used as a payload for JWT.
 
-  var token = authenticate.getToken({_id: req.user._id});
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'application/json');
-  res.json({success: true,token: token, status: 'You have successfully logged in'});
+
+   passport.authenticate('local', (err, user, info) => {
+    if (err)
+      return next(err); //error in retrieving
+
+    if (!user) { //if user credentails is not authentic
+      res.statusCode = 401;
+      res.setHeader('Content-Type', 'application/json');
+      res.json({success: false, status: 'Login Unsuccessful!', err: info}); //additional information is send as error
+    } 
+    //logging in the user if the user is found using 'login()' method
+    req.logIn(user, (err) => {
+      if (err) { //handling any encountered error
+        res.statusCode = 401;
+        res.setHeader('Content-Type', 'application/json');
+        res.json({success: false, status: 'Login Unsuccessful!', err: 'Could not log in user!'});          
+      }
+      //if not error is encountered and the user is found, then sending the JWT as response to the client.
+      var token = authenticate.getToken({_id: req.user._id});
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.json({success: true, status: 'Login Successful!', token: token});
+    }); 
+  }) (req, res, next);
 
 });
 
@@ -149,5 +172,26 @@ router.get('/facebook/token', passport.authenticate('facebook-token'), (req, res
     res.json({success: true,token: token, status: 'You have successfully logged in'});
   }
 });
+ 
+//this will check if the JWT is present in the client side at any pointof time whene this URI is requested.
+router.get('/checkJWTtoken', cors.corsWithOptions, (req, res) => {
+  passport.authenticate('jwt', {session: false}, (err, user, info) => {
+    if (err)
+      return next(err);
+    
+    if (!user) {
+      res.statusCode = 401;
+      res.setHeader('Content-Type', 'application/json');
+      return res.json({status: 'JWT invalid!', success: false, err: info});
+    }
+    else {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      return res.json({status: 'JWT valid!', success: true, user: user});
+
+    }
+  }) (req, res);
+});
+
 
 module.exports = router;

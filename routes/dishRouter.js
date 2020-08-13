@@ -24,7 +24,7 @@ dishRouter.route('/') //When no paramter is mentioned in the URI ,i.e, URI point
  //'cors.cors' header will indiacte that get request will be granted from any origin website. cors methood is exported form 'cors' module
 
     //res.end("Will send all the dishes to you!");
-    Dishes.find({})
+    Dishes.find(req.query)
     .populate('comments.author')
     .then((dishes) => {
         res.statusCode=200;
